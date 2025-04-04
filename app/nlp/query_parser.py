@@ -1,39 +1,38 @@
-from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
-from langchain_community.llms import Ollama
+from langchain_ollama.llms import OllamaLLM
 
 class QueryParser:
-    def __init__(self, model_name="llama3.2"):
-        self.llm = Ollama(model=model_name)
+    def __init__(self, model_name: str = "llama3.2"):
+        self.llm = OllamaLLM(model=model_name)
 
         self.prompt = PromptTemplate.from_template("""
-            You are an AI that converts user questions, in Spanish, into secure SQL queries.
+            Convierte la siguiente pregunta en español en una consulta segura.
 
-            - The database has the following tables:
-              1. `Retail Clients` (Customer ID,	Customer, Name,	Email, Phone, City, State,	Country,	Age,	Gender)
-              2. `Retail Products` (Product ID,	Product Name,	Category,	Sub-Category,	Product_Brand)
-              3. `Retail Sales` (Order ID,	Order Date,	Customer ID,	Product ID,	Sales,	Quantity,	Total_Amount)
+            Reglas:
+            - SOLO devuelve la consulta, sin explicaciones ni comentarios.
+            - Usa `LIMIT 10` en consultas grandes.
+            - Evita `SELECT *`, usa nombres de columnas específicos.
+            - Usa nombres de tabla exactos.
 
-            - Rules for SQL generation:
-              1. **Only SELECT queries** (No DELETE, UPDATE, or INSERT).
-              2. **Use LIMIT 10 for large queries**.
-              3. **Avoid using wildcards (`SELECT *`)**.
-              4. **Prevent SQL injection by parameterizing values**.
-              5. **Join tables only if necessary**.
+            Tablas disponibles:
+            1. `Clients_2` (Customer_ID, Customer_Name, Email, Phone, City, State, Country, Age, Gender)
+            2. `Products_2` (Product_ID, Product_Name, Category, Sub_Category, Product_Brand)
+            3. `Sales_2` (Order_ID, Order_Date, Customer_ID, Product_ID, Sales, Quantity, Total_Amount)
 
-            - Examples:
-              User: "Muestrame los 5 productos más vendidos."
-              SQL: "SELECT product_name, SUM(quantity) AS total_sold FROM sales GROUP BY product_name ORDER BY total_sold DESC LIMIT 5;"
-
-              User: "¿Cuántas ventas fueron hechas en los últimos 7 días?"
-              SQL: "SELECT COUNT(*) FROM sales WHERE date >= CURDATE() - INTERVAL 7 DAY;"
-
-              User: "{query}"
-              SQL:
+            Pregunta: {query}
+            SQL:
         """)
 
-        self.chain = LLMChain(llm=self.llm, prompt=self.prompt)
+    def generate_sql(self, user_query: str) -> str:
+        try:
+            if not isinstance(user_query, str):
+                raise TypeError("User query must be a string.")
 
-    def generate_sql(self, user_query):
-        sql_query = self.chain.invoke({"query": user_query})
-        return sql_query.strip()
+            formatted_prompt = self.prompt.format(query=user_query)
+            sql_query = self.llm.invoke(formatted_prompt)
+
+            print(f"Generated query: {sql_query.strip()}")
+            return sql_query.strip()
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            return ""
