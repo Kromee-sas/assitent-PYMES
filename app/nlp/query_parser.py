@@ -16,8 +16,15 @@ class QueryParser:
 
             Tablas disponibles:
             1. `Clients_2` (Customer_ID, Customer_Name, Email, Phone, City, State, Country, Age, Gender)
-            2. `Products_2` (Product_ID, Product_Name, Category, Sub_Category, Product_Brand)
+            2. `Products_2` (Product_ID, Product_Name, Category, Subcategory, Product_Brand)
             3. `Sales_2` (Order_ID, Order_Date, Customer_ID, Product_ID, Sales, Quantity, Total_Amount)
+
+            Ejemplos:
+            User: "Muestrame el top 5 de productos mas vendidos."
+            SQL: "SELECT p.Product_Name, SUM(s.Total_Amount) AS Total_Sales FROM Sales_2 s JOIN Products_2 p ON s.Product_ID = p.Product_ID GROUP BY p.Product_Name ORDER BY Total_Sales DESC LIMIT 5;"
+
+            User: "Cuantas ventas fueron realizadas en los ultimos 7 dias?"
+            SQL: "SELECT COUNT(*) FROM sales WHERE date >= CURDATE() - INTERVAL 7 DAY;"
 
             Pregunta: {query}
             SQL:
@@ -31,8 +38,7 @@ class QueryParser:
             formatted_prompt = self.prompt.format(query=user_query)
             sql_query = self.llm.invoke(formatted_prompt)
 
-            print(f"Generated query: {sql_query.strip()}")
-            return sql_query.strip()
+            return "Genetated query: " + sql_query.strip()
         except Exception as e:
             print(f"An error occurred: {e}")
             return ""
