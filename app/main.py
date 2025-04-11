@@ -1,15 +1,17 @@
 from flask import Flask
-from flask_cors import CORS
-from routes import main_blueprint
+from flask_jwt_extended import JWTManager
+from app.auth.routes import auth_blueprint
+from app.nlp.routes import nlp_blueprint
+from app.database.models import db
 
-# Initialize Flask app
-app = Flask(__name__)
+def create_app():
+    app = Flask(__name__)
+    app.config["JWT_SECRET_KEY"] = "your_secret_here"
 
-# Enable Cross-Origin Resource Sharing (CORS)
-CORS(app)
+    JWTManager(app)
+    db.init_app(app)
 
-# Register API routes
-app.register_blueprint(main_blueprint)
+    app.register_blueprint(auth_blueprint)
+    app.register_blueprint(nlp_blueprint)
 
-if __name__ == "__main__":
-    app.run(debug=True)
+    return app
