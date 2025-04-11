@@ -1,6 +1,8 @@
+from flask import Flask, request, jsonify
 import pandas as pd
-from app.nlp.query_parser import QueryParser
-from app.database.db_connector import get_db_connection
+from nlp.query_parser import QueryParser
+from database.db_connector import get_db_connection
+from nlp.sql_validator import validate_sql
 
 app = Flask(__name__)
 parser = QueryParser()
@@ -16,12 +18,18 @@ def query_database():
         return jsonify({"error": "Se requiere el campo 'pregunta' en el JSON."}), 400
 
     pregunta = data['pregunta']
-    conn = get_db_connection()  # Obtiene la conexión desde db_connector.py
+    conn = get_db_connection()
     if not conn:
         return jsonify({"error": "No se pudo conectar a la base de datos. Revisa la configuración."}), 500
 
     try:
         sql = parser.generate_sql(pregunta)
+
+        # Validar la consulta SQL antes de ejecutarla
+        is_valid, validation_message = validate_sql(sql)
+        if not is_valid:
+            return jsonify({"error": f"Consulta SQL inválida: {validation_message}"}), 400
+
         df_resultado = pd.read_sql(sql, conn)
         conn.close()
         # Convertir el DataFrame a una lista de diccionarios para JSON
@@ -34,4 +42,4 @@ def query_database():
         return jsonify({"error": f"Error al ejecutar la consulta: {e}"}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True) # No usar debug=True en producción
