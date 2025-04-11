@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Consultas</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f5f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            width: 100%;
+            max-width: 600px;
+        }
+        
+        .header {
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        
+        .header h1 {
+            color: #333;
+            font-size: 1.8rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #555;
+            font-size: 0.9rem;
+        }
+        
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 0.8rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group textarea {
+            min-height: 150px;
+            resize: vertical;
+        }
+        
+        .form-group input:focus, .form-group textarea:focus {
+            border-color: #4f46e5;
+            outline: none;
+        }
+        
+        .remember-forgot {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            font-size: 0.85rem;
+        }
+        
+        .remember {
+            display: flex;
+            align-items: center;
+        }
+        
+        .remember input {
+            margin-right: 0.5rem;
+        }
+        
+        .forgot-password {
+            color: #4f46e5;
+            text-decoration: none;
+        }
+        
+        .forgot-password:hover {
+            text-decoration: underline;
+        }
+        
+        .button {
+            width: 100%;
+            padding: 0.8rem;
+            background-color: #4f46e5;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .button:hover {
+            background-color: #4338ca;
+        }
+        
+        .toggle-form {
+            margin-top: 1.5rem;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .toggle-form a {
+            color: #4f46e5;
+            text-decoration: none;
+            margin-left: 0.3rem;
+            cursor: pointer;
+        }
+        
+        .toggle-form a:hover {
+            text-decoration: underline;
+        }
+        
+        .screen {
+            display: none;
+        }
+        
+        .screen.active {
+            display: block;
+        }
+        
+        .user-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .user-email {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .logout-btn, .back-btn {
+            background: none;
+            border: none;
+            color: #4f46e5;
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+        
+        .logout-btn:hover, .back-btn:hover {
+            text-decoration: underline;
+        }
+        
+        /* Estilos específicos para la pantalla de resultados */
+        .query-question {
+            background-color: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            font-style: italic;
+            color: #555;
+        }
+        
+        .result-container {
+            text-align: center;
+            padding: 2rem 1rem;
+            margin-bottom: 1.5rem;
+            background-color: #f0f4ff;
+            border-radius: 8px;
+            border-left: 4px solid #4f46e5;
+        }
+        
+        .result-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #4f46e5;
+            margin-bottom: 0.5rem;
+        }
+        
+        .result-label {
+            font-size: 1.1rem;
+            color: #555;
+        }
+        
+        .result-context {
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .result-list {
+            list-style: none;
+            margin: 1rem 0;
+        }
+        
+        .result-list li {
+            padding: 0.8rem;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .result-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .result-list-value {
+            font-weight: bold;
+            color: #4f46e5;
+        }
+        
+        .sql-query {
+            background-color: #f8f9fa;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1.5rem;
+            font-family: monospace;
+            font-size: 0.9rem;
+            color: #555;
+            overflow-x: auto;
+        }
+        
+        .sql-query-toggle {
+            text-align: center;
+            margin-top: 1rem;
+            font-size: 0.9rem;
+            color: #666;
+            cursor: pointer;
+        }
+        
+        .sql-query-toggle:hover {
+            text-decoration: underline;
+            color: #4f46e5;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        
+        .secondary-button {
+            flex: 1;
+            padding: 0.8rem;
+            background-color: white;
+            color: #4f46e5;
+            border: 1px solid #4f46e5;
+            border-radius: 4px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        
+        .secondary-button:hover {
+            background-color: #f0f4ff;
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                padding: 1.5rem;
+            }
+            
+            .result-value {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Login Screen -->
+        <div id="login-screen" class="screen active">
+            <div class="header">
+                <h1>Iniciar Sesión</h1>
+                <p>Ingresa tus credenciales para acceder</p>
+            </div>
+            
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="login-email">Correo electrónico</label>
+                    <input type="email" id="login-email" name="email" placeholder="ejemplo@correo.com" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="login-password">Contraseña</label>
+                    <input type="password" id="login-password" name="password" placeholder="Tu contraseña" required>
+                </div>
+                
+                <div class="remember-forgot">
+                    <div class="remember">
+                        <input type="checkbox" id="remember" name="remember">
+                        <label for="remember">Recordarme</label>
+                    </div>
+                    <a href="#" class="forgot-password">¿Olvidaste tu contraseña?</a>
+                </div>
+                
+                <button type="submit" class="button">Iniciar Sesión</button>
+            </form>
+            
+            <div class="toggle-form">
+                ¿No tienes una cuenta?<a id="show-register">Regístrate</a>
+            </div>
+        </div>
+        
+        <!-- Register Screen -->
+        <div id="register-screen" class="screen">
+            <div class="header">
+                <h1>Crear Cuenta</h1>
+                <p>Completa tus datos para registrarte</p>
+            </div>
+            
+            <form id="register-form">
+                <div class="form-group">
+                    <label for="username">Nombre de usuario</label>
+                    <input type="text" id="username" name="username" placeholder="Tu nombre de usuario" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="register-email">Correo electrónico</label>
+                    <input type="email" id="register-email" name="email" placeholder="ejemplo@correo.com" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="register-password">Contraseña</label>
+                    <input type="password" id="register-password" name="password" placeholder="Crea una contraseña segura" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="company-id">Identificador de empresa</label>
+                    <input type="text" id="company-id" name="company-id" placeholder="ID de tu empresa" required>
+                </div>
+                
+                <button type="submit" class="button">Registrarse</button>
+            </form>
+            
+            <div class="toggle-form">
+                ¿Ya tienes una cuenta?<a id="show-login">Iniciar sesión</a>
+            </div>
+        </div>
+        
+        <!-- Query Screen (after login) -->
+        <div id="query-screen" class="screen">
+            <div class="user-info">
+                <span id="user-email" class="user-email">usuario@ejemplo.com</span>
+                <button id="logout-btn" class="logout-btn">Cerrar sesión</button>
+            </div>
+            
+            <div class="header">
+                <h1>¿Qué quieres saber hoy?</h1>
+                <p>Escribe tu consulta y te responderemos lo antes posible</p>
+            </div>
+            
+            <form id="query-form">
+                <div class="form-group">
+                    <label for="query-text">Tu consulta</label>
+                    <textarea id="query-text" name="query" placeholder="Escribe aquí tu pregunta o consulta..." required></textarea>
+                </div>
+                
+                <button type="submit" class="button">Enviar consulta</button>
+            </form>
+        </div>
+        
+        <!-- Results Screen -->
+        <div id="results-screen" class="screen">
+            <div class="user-info">
+                <span id="results-user-email" class="user-email">usuario@ejemplo.com</span>
+                <button id="results-logout-btn" class="logout-btn">Cerrar sesión</button>
+            </div>
+            
+            <!-- Pregunta original -->
+            <div class="query-question">
+                "¿Cuál fue el producto más vendido hoy?"
+            </div>
+            
+            <!-- Contenedor de resultados - Ejemplo 1: Producto más vendido -->
+            <div class="result-container">
+                <div class="result-value">Smartphone Galaxy S23</div>
+                <div class="result-label">Producto más vendido</div>
+                <div class="result-context">Vendidas 127 unidades (23% más que ayer)</div>
+            </div>
+            
+            <!-- Botones de acción -->
+            <div class="action-buttons">
+                <button id="back-to-query" class="secondary-button">Nueva consulta</button>
+                <button id="show-details" class="button">Ver detalles</button>
+            </div>
+            
+            <!-- SQL Query (inicialmente oculto) -->
+            <div id="sql-query" class="sql-query" style="display: none;">
+                SELECT p.nombre_producto, SUM(v.cantidad) as total_vendido
+                FROM ventas v
+                JOIN productos p ON v.id_producto = p.id_producto
+                WHERE DATE(v.fecha_venta) = CURRENT_DATE
+                GROUP BY p.nombre_producto
+                ORDER BY total_vendido DESC
+                LIMIT 1;
+            </div>
+            <div id="toggle-sql" class="sql-query-toggle">
+                Mostrar consulta SQL
+            </div>
+            
+            <!-- Ejemplo alternativo: Total de ventas (oculto por defecto) -->
+            <div id="total-sales-example" style="display: none;">
+                <div class="query-question">
+                    "¿Cuál fue el total de las ventas hoy?"
+                </div>
+                
+                <div class="result-container">
+                    <div class="result-value">$45,782.50</div>
+                    <div class="result-label">Total de ventas</div>
+                    <div class="result-context">Incremento del 15% respecto al mismo día de la semana pasada</div>
+                </div>
+            </div>
+            
+            <!-- Ejemplo alternativo: Top 5 productos (oculto por defecto) -->
+            <div id="top-products-example" style="display: none;">
+                <div class="query-question">
+                    "¿Cuáles fueron los 5 productos más vendidos este mes?"
+                </div>
+                
+                <div class="result-container">
+                    <div class="result-label">Top 5 productos del mes</div>
+                    <ul class="result-list">
+                        <li>
+                            <span>Smartphone Galaxy S23</span>
+                            <span class="result-list-value">1,245 unidades</span>
+                        </li>
+                        <li>
+                            <span>Laptop Pro X1</span>
+                            <span class="result-list-value">987 unidades</span>
+                        </li>
+                        <li>
+                            <span>Auriculares Inalámbricos</span>
+                            <span class="result-list-value">876 unidades</span>
+                        </li>
+                        <li>
+                            <span>Smartwatch Series 7</span>
+                            <span class="result-list-value">654 unidades</span>
+                        </li>
+                        <li>
+                            <span>Tablet Air 10"</span>
+                            <span class="result-list-value">543 unidades</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Store user data
+        let currentUser = null;
+        
+        // Toggle between login and register screens
+        document.getElementById('show-register').addEventListener('click', function() {
+            document.getElementById('login-screen').classList.remove('active');
+            document.getElementById('register-screen').classList.add('active');
+        });
+        
+        document.getElementById('show-login').addEventListener('click', function() {
+            document.getElementById('register-screen').classList.remove('active');
+            document.getElementById('login-screen').classList.add('active');
+        });
+        
+        // Login form submission
+        document.getElementById('login-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            
+            // Here you would normally validate credentials with a server
+            // For demo purposes, we'll just simulate a successful login
+            
+            // Store user data
+            currentUser = { email: email };
+            
+            // Display user email in the query screen
+            document.getElementById('user-email').textContent = email;
+            document.getElementById('results-user-email').textContent = email;
+            
+            // Show query screen
+            document.getElementById('login-screen').classList.remove('active');
+            document.getElementById('query-screen').classList.add('active');
+            
+            console.log('Usuario ha iniciado sesión:', { email });
+        });
+        
+        // Register form submission
+        document.getElementById('register-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            const companyId = document.getElementById('company-id').value;
+            
+            // Here you would normally send registration data to a server
+            console.log('Registrando usuario:', { username, email, password, companyId });
+            
+            // Simulate successful registration
+            alert('Registro exitoso! Ahora puedes iniciar sesión.');
+            
+            // Redirect to login screen after registration
+            document.getElementById('register-screen').classList.remove('active');
+            document.getElementById('login-screen').classList.add('active');
+        });
+        
+        // Query form submission
+        document.getElementById('query-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            
+            const queryText = document.getElementById('query-text').value;
+            
+            // Here you would normally send the query to a server for processing
+            console.log('Consulta enviada:', { user: currentUser.email, query: queryText });
+            
+            // Update the question in the results screen
+            document.querySelector('.query-question').textContent = `"${queryText}"`;
+            
+            // Show results screen
+            document.getElementById('query-screen').classList.remove('active');
+            document.getElementById('results-screen').classList.add('active');
+            
+            // Reset any alternative examples that might be showing
+            document.getElementById('total-sales-example').style.display = 'none';
+            document.getElementById('top-products-example').style.display = 'none';
+            document.querySelector('.result-container').style.display = 'block';
+            document.querySelector('.query-question').style.display = 'block';
+            
+            // For demo purposes, we'll simulate different responses based on the query
+            if (queryText.toLowerCase().includes('total') && queryText.toLowerCase().includes('ventas')) {
+                // Show total sales example
+                document.querySelector('.result-container').style.display = 'none';
+                document.querySelector('.query-question').style.display = 'none';
+                document.getElementById('total-sales-example').style.display = 'block';
+            } else if (queryText.toLowerCase().includes('productos') && queryText.toLowerCase().includes('mes')) {
+                // Show top products example
+                document.querySelector('.result-container').style.display = 'none';
+                document.querySelector('.query-question').style.display = 'none';
+                document.getElementById('top-products-example').style.display = 'block';
+            }
+        });
+        
+        // Toggle SQL query visibility
+        document.getElementById('toggle-sql').addEventListener('click', function() {
+            const sqlQuery = document.getElementById('sql-query');
+            const toggleText = document.getElementById('toggle-sql');
+            
+            if (sqlQuery.style.display === 'none') {
+                sqlQuery.style.display = 'block';
+                toggleText.textContent = 'Ocultar consulta SQL';
+            } else {
+                sqlQuery.style.display = 'none';
+                toggleText.textContent = 'Mostrar consulta SQL';
+            }
+        });
+        
+        // Back to query button
+        document.getElementById('back-to-query').addEventListener('click', function() {
+            document.getElementById('results-screen').classList.remove('active');
+            document.getElementById('query-screen').classList.add('active');
+        });
+        
+        // Logout from results screen
+        document.getElementById('results-logout-btn').addEventListener('click', function() {
+            // Clear user data
+            currentUser = null;
+            
+            // Reset forms
+            document.getElementById('login-form').reset();
+            document.getElementById('query-form').reset();
+            
+            // Return to login screen
+            document.getElementById('results-screen').classList.remove('active');
+            document.getElementById('login-screen').classList.add('active');
+            
+            console.log('Usuario ha cerrado sesión');
+        });
+        
+        // Logout from query screen
+        document.getElementById('logout-btn').addEventListener('click', function() {
+            // Clear user data
+            currentUser = null;
+            
+            // Reset forms
+            document.getElementById('login-form').reset();
+            document.getElementById('query-form').reset();
+            
+            // Return to login screen
+            document.getElementById('query-screen').classList.remove('active');
+            document.getElementById('login-screen').classList.add('active');
+            
+            console.log('Usuario ha cerrado sesión');
+        });
+        
+        // For demo purposes: show details button functionality
+        let currentExample = 1;
+        document.getElementById('show-details').addEventListener('click', function() {
+            // Ocultar todos los ejemplos
+            document.getElementById('total-sales-example').style.display = 'none';
+            document.getElementById('top-products-example').style.display = 'none';
+            document.querySelector('.result-container').style.display = 'block';
+            document.querySelector('.query-question').style.display = 'block';
+            
+            // Mostrar el ejemplo actual
+            currentExample = (currentExample % 3) + 1;
+            
+            if (currentExample === 1) {
+                // Ya estamos mostrando el ejemplo 1 (producto más vendido)
+                alert('Mostrando detalles del producto más vendido');
+            } else if (currentExample === 2) {
+                // Mostrar ejemplo 2 (total de ventas)
+                document.querySelector('.result-container').style.display = 'none';
+                document.querySelector('.query-question').style.display = 'none';
+                document.getElementById('total-sales-example').style.display = 'block';
+            } else {
+                // Mostrar ejemplo 3 (top 5 productos)
+                document.querySelector('.result-container').style.display = 'none';
+                document.querySelector('.query-question').style.display = 'none';
+                document.getElementById('top-products-example').style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>
