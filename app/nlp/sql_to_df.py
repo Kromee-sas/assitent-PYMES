@@ -1,38 +1,37 @@
-# test_query_parser.py
-import mysql.connector
 import pandas as pd
-from query_parser import QueryParser
+from app.nlp.query_parser import QueryParser
+from app.database.db_connector import get_db_connection
 
-# Crear instancia del parser
+app = Flask(__name__)
 parser = QueryParser()
 
-# Conexión a la base de datos
-conn = mysql.connector.connect(
-    host="207.244.241.149",
-    user="krom_assisten_ia",
-    password="envccmvO5%rF9y8K",
-    database="krom_assisten_ia"
-)
+@app.route('/query', methods=['POST'])
+def query_database():
+    """
+    Endpoint para recibir una pregunta en lenguaje natural y devolver
+    los resultados de la consulta SQL generada.
+    """
+    data = request.get_json()
+    if not data or 'pregunta' not in data:
+        return jsonify({"error": "Se requiere el campo 'pregunta' en el JSON."}), 400
 
-print("Asistente de consultas SQL activado. Escribe 'salir' para terminar.\n")
-
-while True:
-    pregunta = input("Pregunta en lenguaje natural:\n")
-    if pregunta.lower() in ["salir", "exit", "quit"]:
-        print("Saliendo del asistente. ¡Hasta luego!")
-        break
+    pregunta = data['pregunta']
+    conn = get_db_connection()  # Obtiene la conexión desde db_connector.py
+    if not conn:
+        return jsonify({"error": "No se pudo conectar a la base de datos. Revisa la configuración."}), 500
 
     try:
-        # Generar la consulta SQL
         sql = parser.generate_sql(pregunta)
-
-        # Ejecutar y mostrar resultados
         df_resultado = pd.read_sql(sql, conn)
-        print("Resultado:")
-        print(df_resultado.head(10))  # puedes cambiar el número de filas mostradas
+        conn.close()
+        # Convertir el DataFrame a una lista de diccionarios para JSON
+        resultados_json = df_resultado.head(10).to_dict(orient='records')
+        return jsonify({"resultado": resultados_json}), 200
 
     except Exception as e:
-        print(f"❌ Error al ejecutar la consulta: {e}")
+        if conn and conn.is_connected():
+            conn.close()
+        return jsonify({"error": f"Error al ejecutar la consulta: {e}"}), 500
 
-# Cerrar la conexión al finalizar
-conn.close()
+if __name__ == '__main__':
+    app.run(debug=True)
