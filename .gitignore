@@ -1,0 +1,11 @@
+*.pyc
+*.pyo
+__pycache__/
+venv/
+myenv/
+instance/
+.mypy_cache/
+.pytest_cache/
+*.db
+.env
+migrations/
