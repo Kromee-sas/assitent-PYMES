@@ -1,3 +1,4 @@
+```txt
 ASSISTENT-PYMES/
 ├── app/
 │   ├── __init__.py               # Factory de la aplicación
@@ -45,7 +46,7 @@ tests/                           # Pruebas
 ├── run.py                        # Punto de entrada
 ├── requirements.txt
 └── README.md
-
+```
 
 # 1. Configurar entorno virtual
     
