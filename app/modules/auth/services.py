@@ -44,7 +44,7 @@ class AuthService:
             nuevo_usuario = Usuario(
                 nombre=data['nombre'],
                 email=data['email'],
-                password=data['password'],
+                password_hash=AuthService.hash_password(data['password']),
                 rol=data.get('rol', 'empleado'),
                 nivel_acceso=data.get('nivel_acceso', 1)
             )
