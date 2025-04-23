@@ -1,15 +1,13 @@
-from datetime import datetime
-
+from datetime import datetime, timezone
 from app.core.extensions import db, bcrypt  
 from flask_jwt_extended import create_access_token, create_refresh_token
-
 from app.core.exceptions import (
     ValidationError, 
     AuthError, 
     ConflictError, 
     DatabaseError
 )
-from .models import Usuario
+from .models import Usuario, TokenBlacklist
 from .schemas import UsuarioSchema, LoginSchema
 
 class AuthService:
@@ -52,9 +50,15 @@ class AuthService:
             return schema.dump(nuevo_usuario)
         except Exception as e:
             raise DatabaseError(f"Error al registrar usuario: {str(e)}")
+        
+    @staticmethod
+    def get_all_active_users():
+        """Obtiene todos los usuarios activos del sistema"""
+        return Usuario.query.filter_by(estado=True).all()
 
     @staticmethod
     def login_usuario(data):
+        
         schema = LoginSchema()
         errors = schema.validate(data)
         if errors:
@@ -68,12 +72,78 @@ class AuthService:
         if not usuario.estado:
             raise AuthError("Cuenta desactivada", 403)
 
+        additional_claims = {
+        "user_role": usuario.rol,
+        "access_level": usuario.nivel_acceso,
+        "email": usuario.email,
+        
+        }
         AuthService.update_user_login(usuario)  # Usa el método estático existente
         
         return {
-            "access_token": create_access_token(identity=str(usuario.id)),
-            "refresh_token": create_refresh_token(identity=str(usuario.id)),
+            "access_token": create_access_token(identity=str(usuario.id),additional_claims=additional_claims),
+            "refresh_token": create_refresh_token(identity=str(usuario.id),additional_claims=additional_claims),
             "usuario": UsuarioSchema().dump(usuario)
         }
+        
+        
+        
+    @staticmethod
+    def get_active_sessions(user_id):
+        """Obtiene información sobre todas las sesiones activas del usuario"""
+            
+        # Obtener tokens no revocados
+        now = datetime.now(timezone.utc)
+        tokens_revocados = set(t.jti for t in TokenBlacklist.query.filter_by(user_id=user_id).all())
+        
+        # En un entorno real podrías almacenar metadatos de sesión (dispositivo, IP, etc.)
+        # para mostrar información útil al usuario
+        return []  # Retorna una lista vacía por ahora, implementa según necesidades
+
+class TokenService:
+    @staticmethod
+    def revoke_token(jti, user_id, expires_at, token_type='access'):
+        """Registra un token en la lista negra"""
+        token = TokenBlacklist(
+            jti=jti,
+            user_id=user_id,
+            token_type=token_type,
+            expires_at=expires_at
+        )
+        token.save()
+    
+    @staticmethod
+    def is_token_revoked(jti):
+        """Verifica si un token está en la lista negra"""
+        return TokenBlacklist.query.filter_by(jti=jti).first() is not None
+    
+    @staticmethod
+    def get_user_active_tokens(user_id):
+        """Obtiene todos los tokens activos de un usuario"""
+        now = datetime.now(timezone.utc)
+        return TokenBlacklist.query.filter(
+            TokenBlacklist.user_id == user_id,
+            TokenBlacklist.expires_at > now
+        ).all()
+    
+    @staticmethod
+    def cleanup_expired_tokens():
+        """Elimina los tokens expirados de la base de datos"""
+        now = datetime.now(timezone.utc)
+        try:
+            expired_tokens = TokenBlacklist.query.filter(TokenBlacklist.expires_at < now).delete()
+            db.session.commit()
+            return expired_tokens
+        except Exception as e:
+            db.session.rollback()
+            raise DatabaseError(f"Error limpiando tokens expirados: {str(e)}")
+    @staticmethod
+    def get_user_active_tokens(user_id):
+        """Obtiene todos los tokens activos de un usuario que NO están en la lista negra"""
+        now = datetime.now(timezone.utc)
+        return TokenBlacklist.query.filter(
+            TokenBlacklist.user_id == user_id,
+            TokenBlacklist.expires_at > now
+        ).all()
 
    

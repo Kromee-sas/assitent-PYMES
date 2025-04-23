@@ -18,6 +18,20 @@ class Usuario(BaseModel):
     def __repr__(self):
         return f'<Usuario {self.email}>'
     
+class TokenBlacklist(BaseModel):
+    __tablename__ = 'token_blacklist'
+    
+    jti = db.Column(db.String(36), nullable=False, index=True)
+    token_type = db.Column(db.String(10), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('usuarios.id'), nullable=False)
+    revoked_at = db.Column(db.DateTime, nullable=False, default=db.func.now())
+    expires_at = db.Column(db.DateTime, nullable=False)
+    
+    usuario = db.relationship('Usuario', backref=db.backref('tokens_revocados', lazy='dynamic'))
+    
+    def __repr__(self):
+        return f'<TokenBlacklist {self.jti}>'
+    
 
     
     
