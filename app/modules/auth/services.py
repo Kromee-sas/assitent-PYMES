@@ -54,7 +54,8 @@ class AuthService:
     @staticmethod
     def get_all_active_users():
         """Obtiene todos los usuarios activos del sistema"""
-        return Usuario.query.filter_by(estado=True).all()
+        usuarios = Usuario.query.filter_by(estado=True).all()
+        return UsuarioSchema(many=True).dump(usuarios)
 
     @staticmethod
     def login_usuario(data):
@@ -94,11 +95,33 @@ class AuthService:
             
         # Obtener tokens no revocados
         now = datetime.now(timezone.utc)
-        tokens_revocados = set(t.jti for t in TokenBlacklist.query.filter_by(user_id=user_id).all())
+        tokens_revocados = set(t.jti for t in TokenBlacklist.query.filter_by(user_id=user_id).all())        
+        # SE podria almacenar metadatos de sesión (dispositivo, IP, etc.)        
+        return [] 
+    
+    
+    @staticmethod
+    def filtrar_usuarios_por_rol(rol_usuario):
+        """Filtra usuarios según el rol del usuario actual"""
+        if not rol_usuario:
+            raise AuthError("Rol no especificado", 400)
         
-        # En un entorno real podrías almacenar metadatos de sesión (dispositivo, IP, etc.)
-        # para mostrar información útil al usuario
-        return []  # Retorna una lista vacía por ahora, implementa según necesidades
+        query = Usuario.query.filter_by(estado=True)  # Solo usuarios activos
+        
+        if rol_usuario == 'superadmin':
+            usuarios = query.all()
+        elif rol_usuario == 'administrador':
+            usuarios = query.filter(Usuario.rol.in_(['empleado', 'administrador'])).filter(Usuario.nivel_acceso <= 2).all()
+        elif rol_usuario == 'empleado':
+            usuarios = query.filter_by(rol='empleado', nivel_acceso=1).all()
+        else:
+            raise AuthError("Rol no válido", 403)        
+        # Serialización automática
+        return UsuarioSchema(many=True).dump(usuarios)
+        
+        
+        
+         
 
 class TokenService:
     @staticmethod

@@ -94,9 +94,7 @@ def logout_all_sessions():
     """Cierra todas las sesiones del usuario (revoca todos los tokens)"""
     try:
         current_token = get_jwt()
-        user_id = get_jwt_identity()
-        
-        # Verificar que el usuario actual tenga nivel de acceso 3 (superadmin)
+        user_id = get_jwt_identity()        
         user_role = current_token.get('user_role')
         access_level = current_token.get('access_level')
         
@@ -105,7 +103,7 @@ def logout_all_sessions():
         
         # Obtener todos los usuarios activos
         active_users = AuthService.get_all_active_users()
-        session_count = 0
+        session_count = 0 # Contador de sesiones cerradas
         
         # Revocar todas las sesiones de todos los usuarios
         for user in active_users:
@@ -140,5 +138,24 @@ def logout_all_sessions():
         return jsonify({"error": e.message}), e.status_code
     except Exception as e:
         return jsonify({"error": "Error al cerrar todas las sesiones", "details": str(e)}), 500
+    
+@auth_bp.route('/auth/list-users', methods=['GET'])
+@jwt_required()
+def list_users():
+    try:
+        current_token = get_jwt()
+        user_role = current_token.get('user_role')        
+        usuarios = AuthService.filtrar_usuarios_por_rol(user_role)        
+        return jsonify({
+            "success": True,
+            "count": len(usuarios),
+            "users": usuarios,
+            "your_role": user_role
+        }), 200
+        
+    except AuthError as e:
+        return jsonify({"success": False, "error": e.message}), e.status_code
+    except Exception as e:
+        return jsonify({"success": False, "error": "Error interno"}), 500
 
 
