@@ -28,8 +28,11 @@ Flask-CORS==5.0.1             # Para desarrollo frontend
 
 # NLP y AI (opcional)
 langchain==0.3.21
+langchain_ollama==0.3.2
 ollama==0.4.7
 numpy==2.2.4
+langgraph==0.3.31
+langchain_community==0.3.21
 
 # Utilidades
 gunicorn==23.0.0              # Para producción
